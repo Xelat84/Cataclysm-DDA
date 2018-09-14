@@ -188,6 +188,7 @@ const efftype_id effect_tetanus( "tetanus" );
 const efftype_id effect_tied( "tied" );
 const efftype_id effect_visuals( "visuals" );
 const efftype_id effect_winded( "winded" );
+const efftype_id effect_leash( "leash" );
 
 static const bionic_id bio_remote( "bio_remote" );
 
@@ -7387,7 +7388,8 @@ bool pet_menu( monster *z )
         give_items,
         pheromone,
         milk,
-        rope
+        rope,
+        leash
     };
 
     uimenu amenu;
@@ -7413,11 +7415,17 @@ bool pet_menu( monster *z )
 
     if( z->has_effect( effect_tied ) ) {
         amenu.addentry( rope, true, 'r', _( "Untie" ) );
+        amenu.addentry( leash, true, 'l', _( "Leash" ) );
+    } else if( z->has_effect( effect_leash ) ) {
+        amenu.addentry( rope, true, 'r', _( "Tie" ) );
+        amenu.addentry( leash, true, 'l', _( "Unleash" ) );
     } else {
         if( g->u.has_amount( "rope_6", 1 ) ) {
             amenu.addentry( rope, true, 'r', _( "Tie" ) );
+            amenu.addentry( leash, true, 'l', _( "Leash" ) );
         } else {
             amenu.addentry( rope, false, 'r', _( "You need a short rope" ) );
+            amenu.addentry( leash, false, 'l', _( "You need a short rope" ) );
         }
     }
 
@@ -7603,7 +7611,28 @@ bool pet_menu( monster *z )
             g->u.i_add( rope_6 );
         } else {
             z->add_effect( effect_tied, 1_turns, num_bp, true );
-            g->u.use_amount( "rope_6", 1 );
+            if( z->has_effect( effect_leash ) ) {
+                z->remove_effect( effect_leash );
+            } else {
+                g->u.use_amount( "rope_6", 1 );
+            }
+        }
+
+        return true;
+    }
+
+    if( leash == choice ) {
+        if( z->has_effect( effect_leash ) ) {
+            z->remove_effect( effect_leash );
+            item rope_6( "rope_6", 0 );
+            g->u.i_add( rope_6 );
+        } else {
+            z->add_effect( effect_leash, 1_turns, num_bp, true );
+            if( z->has_effect( effect_tied ) ) {
+                z->remove_effect( effect_tied );
+            } else {
+                g->u.use_amount( "rope_6", 1 );
+            }
         }
 
         return true;
